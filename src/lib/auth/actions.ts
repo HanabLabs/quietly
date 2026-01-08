@@ -107,7 +107,6 @@ export async function verifyCode(email: string, code: string) {
             verification_code_expires: null,
             email_verified: true,
         },
-        email_confirmed_at: new Date().toISOString(),
     })
 
     return { success: true }
