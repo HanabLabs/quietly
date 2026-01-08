@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, Suspense } from 'react'
-import { verifyCode, resendVerificationCode } from '@/lib/auth/actions'
+import { verifyOTP, resendOTP } from '@/lib/auth/actions'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
@@ -21,7 +21,7 @@ function VerifyForm() {
         setError('')
         setLoading(true)
 
-        const result = await verifyCode(email, code)
+        const result = await verifyOTP(email, code)
 
         if (result.success) {
             router.push('/')
@@ -36,7 +36,7 @@ function VerifyForm() {
         setError('')
         setResendSuccess(false)
 
-        const result = await resendVerificationCode(email)
+        const result = await resendOTP(email)
 
         if (result.success) {
             setResendSuccess(true)
@@ -54,7 +54,7 @@ function VerifyForm() {
                 <div className="text-center mb-12">
                     <h1 className="text-2xl font-medium text-foreground mb-2">Verify your email</h1>
                     <p className="text-sm text-muted">
-                        We sent a 6-digit code to<br />
+                        We sent a verification code to<br />
                         <span className="text-foreground">{email}</span>
                     </p>
                 </div>
@@ -75,7 +75,6 @@ function VerifyForm() {
                             className="w-full px-4 py-3 bg-background border border-border rounded-lg focus:outline-none focus:border-accent transition-colors text-center text-2xl tracking-widest font-mono text-foreground"
                             placeholder="000000"
                         />
-                        <p className="text-xs text-muted mt-2">Code expires in 10 minutes</p>
                     </div>
 
                     {error && (
@@ -113,10 +112,6 @@ function VerifyForm() {
                         >
                             ← Back to signup
                         </Link>
-                    </div>
-
-                    <div className="text-center text-sm text-muted pt-4">
-                        <p>Didn't receive a code? Check your spam folder</p>
                     </div>
                 </div>
             </div>

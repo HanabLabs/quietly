@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signUp } from '@/lib/auth/actions'
+import { signUpWithOTP } from '@/lib/auth/actions'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Footer from '@/components/layout/footer'
@@ -18,7 +18,6 @@ export default function SignUpPage() {
         e.preventDefault()
         setError('')
 
-        // Check if passwords match
         if (password !== confirmPassword) {
             setError('Passwords do not match')
             return
@@ -26,7 +25,7 @@ export default function SignUpPage() {
 
         setLoading(true)
 
-        const result = await signUp(email, password)
+        const result = await signUpWithOTP(email, password)
 
         if (result.success) {
             router.push(`/verify?email=${encodeURIComponent(email)}`)
