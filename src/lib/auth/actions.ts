@@ -21,9 +21,11 @@ export async function signUp(email: string, password: string) {
         email,
         password,
         options: {
+            emailRedirectTo: undefined,
             data: {
                 verification_code: verificationCode,
                 verification_code_expires: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+                email_verified: false,
             },
         },
     })
@@ -34,7 +36,7 @@ export async function signUp(email: string, password: string) {
 
     await sendVerificationCode(email, verificationCode)
 
-    return { success: true, email }
+    return { success: true, email, userId: data.user?.id }
 }
 
 export async function resendVerificationCode(email: string) {
@@ -81,8 +83,8 @@ export async function verifyCode(email: string, code: string) {
         return { success: false, error: 'User not found' }
     }
 
-    const storedCode = user.user_metadata.verification_code
-    const expiresAt = user.user_metadata.verification_code_expires
+    const storedCode = user.user_metadata?.verification_code
+    const expiresAt = user.user_metadata?.verification_code_expires
 
     if (!storedCode || !expiresAt) {
         return { success: false, error: 'Verification code not found' }
@@ -92,7 +94,10 @@ export async function verifyCode(email: string, code: string) {
         return { success: false, error: 'Verification code has expired' }
     }
 
-    if (code !== storedCode) {
+    const trimmedCode = code.trim()
+    const trimmedStoredCode = storedCode.toString().trim()
+
+    if (trimmedCode !== trimmedStoredCode) {
         return { success: false, error: 'Invalid verification code' }
     }
 
@@ -102,13 +107,8 @@ export async function verifyCode(email: string, code: string) {
             verification_code_expires: null,
             email_verified: true,
         },
+        email_confirmed_at: new Date().toISOString(),
     })
-
-    const supabase = await createClient()
-    await supabase.auth.signInWithPassword({
-        email,
-        password: user.id,
-    }).catch(() => { })
 
     return { success: true }
 }

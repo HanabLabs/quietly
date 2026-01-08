@@ -24,7 +24,7 @@ function VerifyForm() {
         const result = await verifyCode(email, code)
 
         if (result.success) {
-            router.push('/')
+            router.push('/login?verified=true')
         } else {
             setError(result.error || 'Invalid code')
             setLoading(false)
