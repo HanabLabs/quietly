@@ -6,27 +6,18 @@ import { redirect } from 'next/navigation'
 export async function signUpWithOTP(email: string, password: string) {
     const supabase = await createClient()
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signInWithOtp({
         email,
-        password,
         options: {
-            emailRedirectTo: undefined,
+            shouldCreateUser: true,
+            data: {
+                password: password,
+            },
         },
     })
 
     if (error) {
         return { success: false, error: error.message }
-    }
-
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-            shouldCreateUser: false,
-        },
-    })
-
-    if (otpError) {
-        return { success: false, error: otpError.message }
     }
 
     return { success: true, email }
