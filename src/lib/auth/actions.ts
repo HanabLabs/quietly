@@ -3,21 +3,27 @@
 import { createClient } from '@/lib/supabase/server'
 import { sendVerificationCode } from '@/lib/email/send-verification'
 import { redirect } from 'next/navigation'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+
+const getAdminClient = () => {
+    return createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+}
 
 export async function signUp(email: string, password: string) {
     const supabase = await createClient()
 
-    // Generate 6-digit verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString()
 
-    // Sign up the user
     const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
             data: {
                 verification_code: verificationCode,
-                verification_code_expires: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+                verification_code_expires: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
             },
         },
     })
@@ -26,46 +32,52 @@ export async function signUp(email: string, password: string) {
         return { success: false, error: error.message }
     }
 
-    // Send verification email
     await sendVerificationCode(email, verificationCode)
 
     return { success: true, email }
 }
 
 export async function resendVerificationCode(email: string) {
-    const supabase = await createClient()
+    const adminClient = getAdminClient()
 
-    // Get user by email
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { users }, error } = await adminClient.auth.admin.listUsers()
 
-    if (userError || !user) {
+    if (error) {
+        return { success: false, error: 'Failed to find user' }
+    }
+
+    const user = users.find(u => u.email === email)
+
+    if (!user) {
         return { success: false, error: 'User not found' }
     }
 
-    // Generate new verification code
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString()
 
-    // Update user metadata with new code
-    await supabase.auth.updateUser({
-        data: {
+    await adminClient.auth.admin.updateUserById(user.id, {
+        user_metadata: {
             verification_code: verificationCode,
             verification_code_expires: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
         },
     })
 
-    // Send verification email
     await sendVerificationCode(email, verificationCode)
 
     return { success: true }
 }
 
 export async function verifyCode(email: string, code: string) {
-    const supabase = await createClient()
+    const adminClient = getAdminClient()
 
-    // Get user by email
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { users }, error } = await adminClient.auth.admin.listUsers()
 
-    if (userError || !user) {
+    if (error) {
+        return { success: false, error: 'Failed to find user' }
+    }
+
+    const user = users.find(u => u.email === email)
+
+    if (!user) {
         return { success: false, error: 'User not found' }
     }
 
@@ -84,14 +96,19 @@ export async function verifyCode(email: string, code: string) {
         return { success: false, error: 'Invalid verification code' }
     }
 
-    // Update user as verified
-    await supabase.auth.updateUser({
-        data: {
+    await adminClient.auth.admin.updateUserById(user.id, {
+        user_metadata: {
             verification_code: null,
             verification_code_expires: null,
             email_verified: true,
         },
     })
+
+    const supabase = await createClient()
+    await supabase.auth.signInWithPassword({
+        email,
+        password: user.id,
+    }).catch(() => { })
 
     return { success: true }
 }
