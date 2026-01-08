@@ -29,14 +29,13 @@ export default function KaizenForm({ initialValue = '', onSaved }: KaizenFormPro
         const result = await createKaizen(content)
 
         if (result.success) {
-            setIsSaved(true)
             setShowAnimation(true)
+            setContent('')
 
-            // Remove animation and clear field after animation completes
             setTimeout(() => {
                 setShowAnimation(false)
+                setIsSaved(true)
                 setIsSaving(false)
-                setContent('') // Clear the input
                 onSaved?.()
             }, 600)
         } else {

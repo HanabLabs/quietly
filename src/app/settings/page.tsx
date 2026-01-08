@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import Footer from '@/components/layout/footer'
+import CancelSubscriptionButton from '@/components/settings/cancel-subscription-button'
 
 export default async function SettingsPage() {
     const user = await getUser()
@@ -24,7 +25,6 @@ export default async function SettingsPage() {
         <div className="min-h-screen flex flex-col bg-background">
             <div className="flex-1">
                 <div className="max-w-2xl mx-auto px-6 py-12">
-                    {/* Header */}
                     <div className="mb-12">
                         <Link
                             href="/"
@@ -35,7 +35,6 @@ export default async function SettingsPage() {
                         <h1 className="text-2xl font-medium text-foreground">Settings</h1>
                     </div>
 
-                    {/* Account Section */}
                     <div className="mb-12">
                         <h2 className="text-sm font-medium text-foreground mb-4">Account</h2>
                         <div className="bg-background border border-border rounded-lg p-6">
@@ -46,7 +45,6 @@ export default async function SettingsPage() {
                         </div>
                     </div>
 
-                    {/* Subscription Section */}
                     <div className="mb-12">
                         <h2 className="text-sm font-medium text-foreground mb-4">Subscription</h2>
                         <div className="bg-background border border-border rounded-lg p-6">
@@ -54,7 +52,9 @@ export default async function SettingsPage() {
                                 <p className="text-xs text-muted mb-1">Plan</p>
                                 <p className="text-sm text-foreground">{isPaid ? 'Quiet Plus' : 'Free'}</p>
                             </div>
-                            {!isPaid && (
+                            {isPaid ? (
+                                <CancelSubscriptionButton />
+                            ) : (
                                 <Link
                                     href="/pricing"
                                     className="text-sm text-foreground hover:underline"
@@ -65,7 +65,6 @@ export default async function SettingsPage() {
                         </div>
                     </div>
 
-                    {/* Sign Out */}
                     <div>
                         <form action={signOut}>
                             <button

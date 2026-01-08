@@ -17,7 +17,6 @@ export async function createSetupIntent() {
     }
 
     try {
-        // Create or get customer
         const { data: profile } = await supabase
             .from('profiles')
             .select('email')
@@ -26,7 +25,6 @@ export async function createSetupIntent() {
 
         const email = profile?.email || user.email
 
-        // Search for existing customer
         const customers = await stripe.customers.list({
             email: email,
             limit: 1,
@@ -37,7 +35,6 @@ export async function createSetupIntent() {
         if (customers.data.length > 0) {
             customerId = customers.data[0].id
         } else {
-            // Create new customer
             const customer = await stripe.customers.create({
                 email: email,
                 metadata: {
@@ -47,7 +44,6 @@ export async function createSetupIntent() {
             customerId = customer.id
         }
 
-        // Create setup intent for collecting payment method
         const setupIntent = await stripe.setupIntents.create({
             customer: customerId,
             payment_method_types: ['card'],
@@ -81,19 +77,16 @@ export async function createSubscription(paymentMethodId: string, customerId: st
     }
 
     try {
-        // Attach payment method to customer
         await stripe.paymentMethods.attach(paymentMethodId, {
             customer: customerId,
         })
 
-        // Set as default payment method
         await stripe.customers.update(customerId, {
             invoice_settings: {
                 default_payment_method: paymentMethodId,
             },
         })
 
-        // Create subscription
         const subscription = await stripe.subscriptions.create({
             customer: customerId,
             items: [{
@@ -107,7 +100,6 @@ export async function createSubscription(paymentMethodId: string, customerId: st
             },
         })
 
-        // Update user profile
         await supabase
             .from('profiles')
             .update({
@@ -123,5 +115,46 @@ export async function createSubscription(paymentMethodId: string, customerId: st
     } catch (error) {
         console.error('Error creating subscription:', error)
         return { success: false, error: 'Failed to create subscription' }
+    }
+}
+
+export async function cancelSubscription() {
+    const supabase = await createClient()
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+    if (userError || !user) {
+        return { success: false, error: 'Not authenticated' }
+    }
+
+    if (!stripe) {
+        return { success: false, error: 'Payment service not configured' }
+    }
+
+    try {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('subscription_id')
+            .eq('id', user.id)
+            .single()
+
+        if (!profile?.subscription_id) {
+            return { success: false, error: 'No active subscription' }
+        }
+
+        await stripe.subscriptions.cancel(profile.subscription_id)
+
+        await supabase
+            .from('profiles')
+            .update({
+                subscription_status: 'free',
+                subscription_id: null,
+            })
+            .eq('id', user.id)
+
+        return { success: true }
+    } catch (error) {
+        console.error('Error canceling subscription:', error)
+        return { success: false, error: 'Failed to cancel subscription' }
     }
 }
