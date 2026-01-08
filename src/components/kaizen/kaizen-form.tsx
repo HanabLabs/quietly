@@ -16,10 +16,13 @@ export default function KaizenForm({ initialValue = '', onSaved }: KaizenFormPro
     const [showAnimation, setShowAnimation] = useState(false)
 
     useEffect(() => {
-        // Update content and saved state when initialValue changes
-        setContent(initialValue)
-        setIsSaved(!!initialValue)
-    }, [initialValue])
+        // Only update content from initialValue if not currently in saved state
+        // This prevents the saved content from reappearing after clearing
+        if (!isSaved) {
+            setContent(initialValue)
+            setIsSaved(!!initialValue)
+        }
+    }, [initialValue, isSaved])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
