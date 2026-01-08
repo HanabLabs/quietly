@@ -26,6 +26,7 @@ export async function signUp(email: string, password: string) {
                 verification_code: verificationCode,
                 verification_code_expires: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
                 email_verified: false,
+                temp_password: password,
             },
         },
     })
@@ -101,13 +102,25 @@ export async function verifyCode(email: string, code: string) {
         return { success: false, error: 'Invalid verification code' }
     }
 
+    const tempPassword = user.user_metadata?.temp_password
+
     await adminClient.auth.admin.updateUserById(user.id, {
         user_metadata: {
             verification_code: null,
             verification_code_expires: null,
             email_verified: true,
+            temp_password: null,
         },
+        email_confirm: true,
     })
+
+    if (tempPassword) {
+        const supabase = await createClient()
+        await supabase.auth.signInWithPassword({
+            email,
+            password: tempPassword,
+        })
+    }
 
     return { success: true }
 }
