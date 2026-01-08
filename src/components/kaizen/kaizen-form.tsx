@@ -9,20 +9,18 @@ interface KaizenFormProps {
 }
 
 export default function KaizenForm({ initialValue = '', onSaved }: KaizenFormProps) {
-    const [content, setContent] = useState(initialValue)
+    const [content, setContent] = useState('') // Always start empty, even if saved
     const [isSaving, setIsSaving] = useState(false)
     // If there's an initial value, it means today's kaizen is already saved
     const [isSaved, setIsSaved] = useState(!!initialValue)
     const [showAnimation, setShowAnimation] = useState(false)
 
     useEffect(() => {
-        // Only update content from initialValue if not currently in saved state
-        // This prevents the saved content from reappearing after clearing
-        if (!isSaved) {
-            setContent(initialValue)
-            setIsSaved(!!initialValue)
-        }
-    }, [initialValue, isSaved])
+        // Only update saved state when initialValue changes
+        setIsSaved(!!initialValue)
+        // Note: We deliberately do NOT restore the content.
+        // Once it's "sunk" (saved), it should stay invisible in the input.
+    }, [initialValue])
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
